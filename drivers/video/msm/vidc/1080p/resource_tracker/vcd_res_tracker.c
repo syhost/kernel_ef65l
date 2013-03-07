@@ -235,10 +235,12 @@ static void res_trk_pmem_unmap(struct ddl_buf_addr *addr)
 		if (addr->physical_base_addr) {
 			ion_unmap_kernel(resource_context.res_ion_client,
 					addr->alloc_handle);
-			ion_unmap_iommu(resource_context.res_ion_client,
+			if (!res_trk_check_for_sec_session()) {
+				ion_unmap_iommu(resource_context.res_ion_client,
 				addr->alloc_handle,
 				VIDEO_DOMAIN,
 				VIDEO_FIRMWARE_POOL);
+			}
 			addr->virtual_base_addr = NULL;
 			addr->physical_base_addr = NULL;
 		}
@@ -368,7 +370,7 @@ static u32 res_trk_sel_clk_rate(unsigned long hclk_rate)
 	return status;
 }
 
-static u32 res_trk_get_clk_rate(unsigned long *phclk_rate)
+u32 res_trk_get_clk_rate(unsigned long *phclk_rate)
 {
 	u32 status = true;
 	mutex_lock(&resource_context.lock);

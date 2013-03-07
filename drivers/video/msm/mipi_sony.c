@@ -468,8 +468,8 @@ static int mipi_sony_lcd_on(struct platform_device *pdev)
 	if (!mfd)
 		return -ENODEV;
 	if (mfd->key != MFD_KEY)
-		return -EINVAL;
-
+		return -EINVAL;	
+	
 	//mutex_lock(&mfd->dma->ov_mutex);
 	if (sony_state.disp_initialized == false) {
 		//PRINT("[LIVED] LCD RESET!!\n");
@@ -478,12 +478,13 @@ static int mipi_sony_lcd_on(struct platform_device *pdev)
 		gpio_set_value(LCD_RESET, GPIO_HIGH_VALUE);
 		usleep(10);//msleep(120);
 #if (BOARD_REV < TP20)
-		mipi_dsi_cmds_tx(mfd, &sony_tx_buf, sony_display_init_cmds,
+		mipi_dsi_cmds_tx(&sony_tx_buf, sony_display_init_cmds,
 				ARRAY_SIZE(sony_display_init_cmds));
 #endif
 		sony_state.disp_initialized = true;
 	}
-	mipi_dsi_cmds_tx(mfd, &sony_tx_buf, sony_display_on_cmds,
+	
+	mipi_dsi_cmds_tx(&sony_tx_buf, sony_display_on_cmds,
 			ARRAY_SIZE(sony_display_on_cmds));
 	sony_state.disp_on = true;
 	//mutex_unlock(&mfd->dma->ov_mutex);
@@ -512,7 +513,7 @@ static int mipi_sony_lcd_off(struct platform_device *pdev)
 		gpio_set_value(LCD_RESET, GPIO_HIGH_VALUE);
 		usleep(10);//msleep(120);
 
-		mipi_dsi_cmds_tx(mfd, &sony_tx_buf, sony_display_off_cmds,
+		mipi_dsi_cmds_tx(&sony_tx_buf, sony_display_off_cmds,
 				ARRAY_SIZE(sony_display_off_cmds));
 		sony_state.disp_on = false;
 		sony_state.disp_initialized = false;

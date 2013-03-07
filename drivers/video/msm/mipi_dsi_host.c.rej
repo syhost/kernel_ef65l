@@ -1,0 +1,11 @@
+--- drivers/video/msm/mipi_dsi_host.c
++++ drivers/video/msm/mipi_dsi_host.c
+@@ -88,7 +88,7 @@
+ }
+ #endif
+ 
+-#define MIPI_DSI_TX_TIMEOUT_ms	(HZ *40/1000) // 40ms
++#define MIPI_DSI_TX_TIMEOUT_ms	msecs_to_jiffies(VSYNC_PERIOD*20) // 320 msec
+ 
+ void mipi_dsi_init(void)
+ {

@@ -3124,7 +3124,7 @@ unsigned char hdmi_is_primary;
 #define MSM_FB_SIZE roundup(MSM_FB_PRIM_BUF_SIZE + MSM_FB_EXT_BUF_SIZE + \
 				MSM_FB_DSUB_PMEM_ADDER, 4096)
 
-#define MSM_PMEM_SF_SIZE 0x2000000//0x5A00000 /*90Mbytes = 0x5A00000*//* 80 Mbytes = 0x5000000*//* 64 Mbytes = 0x4000000 */
+#define MSM_PMEM_SF_SIZE 0x2000000 /*90Mbytes = 0x5A00000*//* 80 Mbytes = 0x5000000*//* 64 Mbytes = 0x4000000 */
 #define MSM_HDMI_PRIM_PMEM_SF_SIZE 0x8000000 /* 128 Mbytes */
 
 #ifdef CONFIG_FB_MSM_OVERLAY0_WRITEBACK
@@ -3196,7 +3196,7 @@ unsigned char hdmi_is_primary;
 #define USER_SMI_SIZE         (MSM_SMI_SIZE - KERNEL_SMI_SIZE)
 #define MSM_PMEM_SMIPOOL_SIZE USER_SMI_SIZE
 
-#define MSM_ION_SF_SIZE		0x4000000//----0x5A00000 /*90Mbytes = 0x5A00000*//* 80 Mbytes = 0x5000000 */ /* 64MB = 0x4000000 */
+#define MSM_ION_SF_SIZE		0x5A00000 /*90Mbytes = 0x5A00000*//* 80 Mbytes = 0x5000000 */ /* 64MB = 0x4000000 */
 #define MSM_ION_CAMERA_SIZE     0x4000000 //F_PANTECH_CAMERA  MSM_PMEM_ADSP_SIZE
 #define MSM_ION_MM_FW_SIZE	0x200000 /* (2MB) */
 #define MSM_ION_MM_SIZE		0x3600000//----0x3c00000 /*[BIH] It uses physical real SMI memory... please don't edit it exceed 0x4000000(64MB)*/
@@ -11277,42 +11277,10 @@ static int atv_dac_power(int on)
 #endif
 
 #define MDP_VSYNC_GPIO			28
-#ifdef CONFIG_FB_MSM_MIPI_DSI
-int mdp_core_clk_rate_table[] = {
-// [LS5] 2011.08.18 by lived
-#if defined (CONFIG_FB_MSM_MIPI_DSI_SAMSUNG)
-	128000000,
-	128000000,
-	177780000,
-#elif defined (CONFIG_FB_MSM_MIPI_DSI_SONY)
-	85330000,
-	85330000,
-	200000000,
-#else
-	85330000,
-	128000000,
-	160000000,
-#endif
-	200000000,
-};
-#else
-int mdp_core_clk_rate_table[] = {
-	59080000,
-	128000000,
-	128000000,
-	200000000,
-};
-#endif
 
 static struct msm_panel_common_pdata mdp_pdata = {
 	.gpio = MDP_VSYNC_GPIO,
-#if defined(CONFIG_FB_MSM_MIPI_DSI)
-	.mdp_core_clk_rate = 128000000,
-#else
-	.mdp_core_clk_rate = 59080000,
-#endif
-	.mdp_core_clk_table = mdp_core_clk_rate_table,
-	.num_mdp_clk = ARRAY_SIZE(mdp_core_clk_rate_table),
+	.mdp_max_clk = 200000000,
 #ifdef CONFIG_MSM_BUS_SCALING
 	.mdp_bus_scale_table = &mdp_bus_scale_pdata,
 #endif
@@ -11404,9 +11372,7 @@ static struct tvenc_platform_data atv_pdata = {
 static void __init msm_fb_add_devices(void)
 {
 #ifdef CONFIG_FB_MSM_LCDC_DSUB
-	mdp_pdata.mdp_core_clk_table = NULL;
-	mdp_pdata.num_mdp_clk = 0;
-	mdp_pdata.mdp_core_clk_rate = 200000000;
+	mdp_pdata.mdp_max_clk = 200000000;
 #endif
 	if (machine_is_msm8x60_rumi3())
 		msm_fb_register_device("mdp", NULL);
@@ -11615,6 +11581,40 @@ static void __init bt_power_init(void)
 }
 
 #else //CONFIG_PANTECH_BT
+
+/**
+ * Set MDP clocks to high frequency to avoid underflow when
+ * using high resolution 1200x1920 WUXGA/HDMI as primary panels
+ */
+static void set_mdp_clocks_for_wuxga(void)
+{
+	mdp_sd_smi_vectors[0].ab = 2000000000;
+	mdp_sd_smi_vectors[0].ib = 2000000000;
+	mdp_sd_smi_vectors[1].ab = 2000000000;
+	mdp_sd_smi_vectors[1].ib = 2000000000;
+
+	mdp_sd_ebi_vectors[0].ab = 2000000000;
+	mdp_sd_ebi_vectors[0].ib = 2000000000;
+	mdp_sd_ebi_vectors[1].ab = 2000000000;
+	mdp_sd_ebi_vectors[1].ib = 2000000000;
+
+	mdp_vga_vectors[0].ab = 2000000000;
+	mdp_vga_vectors[0].ib = 2000000000;
+	mdp_vga_vectors[1].ab = 2000000000;
+	mdp_vga_vectors[1].ib = 2000000000;
+
+	mdp_720p_vectors[0].ab = 2000000000;
+	mdp_720p_vectors[0].ib = 2000000000;
+	mdp_720p_vectors[1].ab = 2000000000;
+	mdp_720p_vectors[1].ib = 2000000000;
+
+	mdp_1080p_vectors[0].ab = 2000000000;
+	mdp_1080p_vectors[0].ib = 2000000000;
+	mdp_1080p_vectors[1].ab = 2000000000;
+	mdp_1080p_vectors[1].ib = 2000000000;
+
+	mdp_pdata.mdp_max_clk = 200000000;
+}
 
 #if (defined(CONFIG_MARIMBA_CORE)) && \
 	(defined(CONFIG_MSM_BT_POWER) || defined(CONFIG_MSM_BT_POWER_MODULE))
