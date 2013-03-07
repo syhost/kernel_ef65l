@@ -160,6 +160,7 @@ extern void* get_log_buf_addr(void); //p14291_111214
 /* Suspend and resume console messages over PM events */
 extern void suspend_console(void);
 extern void resume_console(void);
+extern int suspend_console_deferred;
 
 int mda_console_init(void);
 void prom_con_init(void);

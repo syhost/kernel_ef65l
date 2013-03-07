@@ -372,8 +372,10 @@ static int check_syslog_permissions(int type, bool from_file)
 			return 0;
 		/* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
 		if (capable(CAP_SYS_ADMIN)) {
-			WARN_ONCE(1, "Attempt to access syslog with CAP_SYS_ADMIN "
-				 "but no CAP_SYSLOG (deprecated).\n");
+			printk_once(KERN_WARNING "%s (%d): "
+				 "Attempt to access syslog with CAP_SYS_ADMIN "
+				 "but no CAP_SYSLOG (deprecated).\n",
+				 current->comm, task_pid_nr(current));
 			return 0;
 		}
 		return -EPERM;
@@ -825,6 +827,11 @@ static volatile unsigned int printk_cpu = UINT_MAX;
  */
 static inline int can_use_console(unsigned int cpu)
 {
+#ifdef CONFIG_HOTPLUG_CPU
+	if (!cpu_active(cpu) && cpu_hotplug_inprogress())
+		return 0;
+#endif
+
 	return cpu_online(cpu) || have_callable_console();
 }
 
@@ -1166,6 +1173,16 @@ static int __init console_suspend_disable(char *str)
 __setup("no_console_suspend", console_suspend_disable);
 
 /**
+ * suspend_console_deferred:
+ * Parameter to decide whether to defer suspension of console. If set as 1, suspend
+ * console is deferred to latter stages. Currently used in 8x60 projects only.
+ */
+int suspend_console_deferred = 1;
+module_param_named(
+	suspend_console_deferred, suspend_console_deferred, int, S_IRUGO | S_IWUSR | S_IWGRP
+);
+
+/**
  * suspend_console - suspend the console subsystem
  *
  * This disables printk() while we go into suspend states
@@ -1433,7 +1450,7 @@ void console_start(struct console *console)
 }
 EXPORT_SYMBOL(console_start);
 
-static int __read_mostly keep_bootcon;
+static int __read_mostly keep_bootcon = 1;
 
 static int __init keep_bootcon_setup(char *str)
 {

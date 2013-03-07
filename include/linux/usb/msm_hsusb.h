@@ -23,6 +23,10 @@
 #include <linux/wakelock.h>
 #include <linux/pm_qos_params.h>
 
+#ifdef CONFIG_ANDROID_PANTECH_USB_OTG_INTENT
+#include <linux/switch.h>
+#endif
+
 /**
  * Supported USB modes
  *
@@ -181,6 +185,9 @@ struct msm_otg_platform_data {
 	u32 swfi_latency;
 	bool enable_dcd;
 	struct msm_bus_scale_pdata *bus_scale_table;
+#ifdef FEATURE_ANDROID_PANTECH_USB_OTG_MODE
+	int (*control_usb_switch)(int gpio, int value);
+#endif
 };
 
 /**
@@ -258,11 +265,34 @@ struct msm_otg {
 	 * voltage regulator(VDDCX).
 	 */
 #define ALLOW_PHY_RETENTION		BIT(1)
+#if 0//qualcomm otg patch
+	  /*
+	   * Disable the OTG comparators to save more power
+	   * if depends on PMIC for VBUS and ID interrupts.
+	   */
+#define ALLOW_PHY_COMP_DISABLE		BIT(2)
+#endif
 	unsigned long lpm_flags;
 #define PHY_PWR_COLLAPSED		BIT(0)
 #define PHY_RETENTIONED			BIT(1)
+#if 0//qualcomm otg patch
+#define PHY_OTG_COMP_DISABLED		BIT(2)
+#endif
 	struct pm_qos_request_list pm_qos_req_dma;
 	int reset_counter;
+#ifdef FEATURE_ANDROID_PANTECH_USB_OTG_MODE
+	int pmic_id_status;
+	struct delayed_work pmic_id_det;
+#endif
+
+#ifdef CONFIG_ANDROID_PANTECH_USB_OTG_INTENT
+	struct switch_dev sdev_otg;
+	struct switch_dev sdev_otg_dev;
+#endif
+#ifdef FEATURE_PANTECH_USB_CABLE_CONNECT
+	int connect_state;
+	struct work_struct connect_work;
+#endif
 };
 
 struct msm_hsic_host_platform_data {
