@@ -1,0 +1,10 @@
+--- drivers/video/msm/mdp4_overlay.c
++++ drivers/video/msm/mdp4_overlay.c
+@@ -791,6 +791,7 @@
+ 		case MDP_Y_CRCB_H2V1:
+ 		case MDP_Y_CBCR_H2V1:
+ 		case MDP_Y_CRCB_H1V2:
++		case MDP_Y_CBCR_H1V2:
+ 			*luma_off = pipe->src_x +
+ 				(pipe->src_y * pipe->srcp0_ystride);
+ 			*chroma_off = pipe->src_x +

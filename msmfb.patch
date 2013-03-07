@@ -1,0 +1,122 @@
+From f32549aeaa9df7db421067a5283f8c29c8995c8d Mon Sep 17 00:00:00 2001
+From: Huaibin Yang <huaibiny@codeaurora.org>
+Date: Fri, 31 Aug 2012 17:06:52 -0700
+Subject: [PATCH] msm_fb: display: add option to switch mdp operating mode
+
+Currently, mdp switch operating mode without turning off
+timing generator. This patch adds option to have mdp switch
+operating mode (direct out and writeback) with timing generator
+turned off based on configuration of panel file.
+
+CRs-fixed: 405987
+Change-Id: I92057757863218222d8647d33d57f6de9b3b3765
+Signed-off-by: Kuogee Hsieh <khsieh@codeaurora.org>
+Signed-off-by: Siddhartha Agrawal <agrawals@codeaurora.org>
+Signed-off-by: Aravind Venkateswaran <aravindh@codeaurora.org>
+Signed-off-by: Shruthi Krishna <skrish@codeaurora.org>
+---
+ drivers/video/msm/mdp4_overlay_dsi_video.c |   31 +++++++++++++++++++++++++++-
+ drivers/video/msm/msm_fb_panel.h           |    6 ++++++
+ 2 files changed, 36 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/video/msm/mdp4_overlay_dsi_video.c b/drivers/video/msm/mdp4_overlay_dsi_video.c
+index f5ee99c..28d64ce 100644
+--- a/drivers/video/msm/mdp4_overlay_dsi_video.c
++++ b/drivers/video/msm/mdp4_overlay_dsi_video.c
+@@ -56,6 +56,7 @@
+ 	int wait_vsync_cnt;
+ 	int blt_change;
+ 	int blt_free;
++	int blt_ctrl;
+ 	int sysfs_created;
+ 	struct mutex update_lock;
+ 	struct completion ov_comp;
+@@ -522,9 +523,11 @@ int mdp4_dsi_video_on(struct platform_device *pdev)
+ 	int ret = 0;
+ 	int cndx = 0;
+ 	struct vsycn_ctrl *vctrl;
++	struct msm_panel_info *pinfo;
+ 
+ 	vctrl = &vsync_ctrl_db[cndx];
+ 	mfd = (struct msm_fb_data_type *)platform_get_drvdata(pdev);
++	pinfo = &mfd->panel_info;
+ 
+ 	if (!mfd)
+ 		return -ENODEV;
+@@ -534,6 +537,7 @@ int mdp4_dsi_video_on(struct platform_device *pdev)
+ 
+ 	vctrl->mfd = mfd;
+ 	vctrl->dev = mfd->fbi->dev;
++	vctrl->blt_ctrl = pinfo->lcd.blt_ctrl;
+ 
+ 	/* mdp clock on */
+ 	mdp_clk_ctrl(1);
+@@ -1017,6 +1021,7 @@ static void mdp4_dsi_video_do_blt(struct msm_fb_data_type *mfd, int enable)
+ 	int cndx = 0;
+ 	struct vsycn_ctrl *vctrl;
+ 	struct mdp4_overlay_pipe *pipe;
++	long long vtime;
+ 
+ 	vctrl = &vsync_ctrl_db[cndx];
+ 	pipe = vctrl->base_pipe;
+@@ -1053,8 +1058,32 @@ static void mdp4_dsi_video_do_blt(struct msm_fb_data_type *mfd, int enable)
+ 		spin_unlock_irqrestore(&vctrl->spin_lock, flag);
+ 		return;
+ 	}
+-
+ 	spin_unlock_irqrestore(&vctrl->spin_lock, flag);
++
++	if (vctrl->blt_ctrl == BLT_SWITCH_TG_OFF) {
++		int tg_enabled;
++
++		vctrl->blt_change = 0;
++		tg_enabled = inpdw(MDP_BASE + DSI_VIDEO_BASE) & 0x01;
++		if (tg_enabled) {
++			mdp4_dsi_video_wait4vsync(0, &vtime);
++			MDP_OUTP(MDP_BASE + DSI_VIDEO_BASE, 0);
++			mdp4_dsi_video_wait4dmap_done(0);
++		}
++		mdp4_overlayproc_cfg(pipe);
++		mdp4_overlay_dmap_xy(pipe);
++		if (tg_enabled) {
++			/*
++			* need wait for more than 1 ms to
++			* make sure dsi lanes' fifo is empty and
++			* lanes in stop state befroe reset
++			* controller
++			*/
++			usleep(2000);
++			mipi_dsi_sw_reset();
++			MDP_OUTP(MDP_BASE + DSI_VIDEO_BASE, 1);
++		}
++	}
+ }
+ 
+ void mdp4_dsi_video_overlay_blt(struct msm_fb_data_type *mfd,
+diff --git a/drivers/video/msm/msm_fb_panel.h b/drivers/video/msm/msm_fb_panel.h
+index 51a3f38..81eda94 100644
+--- a/drivers/video/msm/msm_fb_panel.h
++++ b/drivers/video/msm/msm_fb_panel.h
+@@ -56,6 +56,11 @@
+ 	MAX_PHYS_TARGET_NUM,
+ } DISP_TARGET_PHYS;
+ 
++enum {
++	BLT_SWITCH_TG_OFF,
++	BLT_SWITCH_TG_ON
++};
++
+ /* panel info type */
+ struct lcd_panel_info {
+ 	__u32 vsync_enable;
+@@ -65,6 +70,7 @@ struct lcd_panel_info {
+ 	__u32 v_pulse_width;
+ 	__u32 hw_vsync_mode;
+ 	__u32 vsync_notifier_period;
++	__u32 blt_ctrl;
+ 	__u32 rev;
+ };
+ 
+-- 
+1.7.10
+

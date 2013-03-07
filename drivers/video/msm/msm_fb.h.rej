@@ -1,0 +1,10 @@
+--- drivers/video/msm/msm_fb.h
++++ drivers/video/msm/msm_fb.h
+@@ -204,6 +207,7 @@
+ 	void *msm_fb_backup;
+ 	boolean panel_driver_on;
+ 	struct mutex entry_mutex;
++	int vsync_sysfs_created;
+ };
+ struct msm_fb_backup_type {
+ 	struct fb_info info;

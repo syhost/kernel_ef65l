@@ -1,0 +1,14 @@
+--- drivers/video/msm/msm_fb.c
++++ drivers/video/msm/msm_fb.c
+@@ -801,7 +803,10 @@
+ static void msmfb_early_suspend(struct early_suspend *h)
+ {
+ 	struct msm_fb_data_type *mfd = container_of(h, struct msm_fb_data_type,
+-						    early_suspend);
++						early_suspend);
++
++	msm_fb_pan_idle(mfd);
++
+ #if defined(CONFIG_FB_MSM_MDP303)
+ 	/*
+ 	* For MDP with overlay, set framebuffer with black pixels
