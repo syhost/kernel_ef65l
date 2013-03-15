@@ -1,0 +1,20 @@
+--- drivers/gpu/msm/kgsl_pwrctrl.h
++++ drivers/gpu/msm/kgsl_pwrctrl.h
+@@ -39,15 +40,16 @@
+ 
+ struct kgsl_pwrctrl {
+ 	int interrupt_num;
+-	int have_irq;
+ 	struct clk *ebi1_clk;
+ 	struct clk *grp_clks[KGSL_MAX_CLKS];
+ 	unsigned long power_flags;
+ 	struct kgsl_pwrlevel pwrlevels[KGSL_MAX_PWRLEVELS];
+ 	unsigned int active_pwrlevel;
+ 	int thermal_pwrlevel;
++	unsigned int default_pwrlevel;
+ 	unsigned int num_pwrlevels;
+ 	unsigned int interval_timeout;
++	bool strtstp_sleepwake;
+ 	struct regulator *gpu_reg;
+ 	uint32_t pcl;
+ 	unsigned int nap_allowed;
