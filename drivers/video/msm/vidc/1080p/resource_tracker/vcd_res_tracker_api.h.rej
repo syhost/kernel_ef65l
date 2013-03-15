@@ -1,8 +1,0 @@
---- drivers/video/msm/vidc/1080p/resource_tracker/vcd_res_tracker_api.h
-+++ drivers/video/msm/vidc/1080p/resource_tracker/vcd_res_tracker_api.h
-@@ -47,4 +47,5 @@
- int res_trk_enable_footswitch(void);
- int res_trk_disable_footswitch(void);
- void res_trk_release_fw_addr(void);
-+u32 res_trk_get_clk_rate(unsigned long *phclk_rate);
- #endif
