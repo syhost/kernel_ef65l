@@ -360,14 +360,14 @@ static struct scalable *scalable;
 			{\
 				.src = MSM_BUS_MASTER_AMPSS_M0, \
 				.dst = MSM_BUS_SLAVE_EBI_CH0, \
-				.ib = (_bw) * 1000000UL, \
-				.ab = (_bw) *  100000UL, \
+				.ib = (_bw) * 1000000ULL, \
+				.ab = (_bw) *  100000ULL, \
 			}, \
 			{ \
 				.src = MSM_BUS_MASTER_AMPSS_M1, \
 				.dst = MSM_BUS_SLAVE_EBI_CH0, \
-				.ib = (_bw) * 1000000UL, \
-				.ab = (_bw) *  100000UL, \
+				.ib = (_bw) * 1000000ULL, \
+				.ab = (_bw) *  100000ULL, \
 			}, \
 		}, \
 		.num_paths = 2, \
@@ -1068,10 +1068,8 @@ static int acpuclk_8960_set_rate(int cpu, unsigned long rate,
 	unsigned long flags;
 	int rc = 0;
 
-	if (cpu > num_possible_cpus()) {
-		rc = -EINVAL;
-		goto out;
-	}
+	if (cpu > num_possible_cpus())
+		return -EINVAL;
 
 	if (reason == SETRATE_CPUFREQ || reason == SETRATE_HOTPLUG)
 		mutex_lock(&driver_lock);

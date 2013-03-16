@@ -1,0 +1,10 @@
+--- include/linux/msm_mdp.h
++++ include/linux/msm_mdp.h
+@@ -502,6 +503,7 @@
+ enum {
+ 	metadata_op_none,
+ 	metadata_op_base_blend,
++	metadata_op_frame_rate,
+ 	metadata_op_max
+ };
+ 

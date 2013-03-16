@@ -693,6 +693,7 @@ static long acdb_ioctl(struct file *f,
 	struct cal_block	data[MAX_NETWORKS];
 	pr_debug("%s\n", __func__);
 
+	result = 0;
 	switch (cmd) {
 	case AUDIO_REGISTER_PMEM:
 		pr_debug("AUDIO_REGISTER_PMEM\n");

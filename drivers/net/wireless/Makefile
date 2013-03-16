@@ -63,8 +63,6 @@ obj-$(CONFIG_BCM4330_B2)	+= bcm4330_b2/
 obj-$(CONFIG_BCM4330)	+= bcm4330/
 obj-$(CONFIG_BCM4329)	+= bcm4329/
 obj-$(CONFIG_BCMDHD)	+= bcmdhd/
-obj-$(CONFIG_BCMDHD_B2)   += bcmdhd_b2/
-obj-$(CONFIG_BCMDHD_B1)   += bcmdhd_b1/
 
 obj-$(CONFIG_LIBRA_SDIOIF)	+= libra/
 obj-$(CONFIG_WCNSS_CORE)	+= wcnss/

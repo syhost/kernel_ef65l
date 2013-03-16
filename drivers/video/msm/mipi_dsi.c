@@ -90,15 +90,14 @@ static int mipi_dsi_off(struct platform_device *pdev)
 	else
 		down(&mfd->dma->mutex);
 
-	mdp4_overlay_dsi_state_set(ST_DSI_SUSPEND);
+	if (mfd->panel_info.type == MIPI_CMD_PANEL) {
+		mipi_dsi_prepare_clocks();
+		mipi_dsi_ahb_ctrl(1);
+		mipi_dsi_clk_enable();
 
-	/* make sure dsi clk is on so that
-	 * dcs commands can be sent
-	 */
-	mipi_dsi_clk_cfg(1);
-
-	/* make sure dsi_cmd_mdp is idle */
-	mipi_dsi_cmd_mdp_busy();
+		/* make sure dsi_cmd_mdp is idle */
+		mipi_dsi_cmd_mdp_busy();
+	}
 
 	/*
 	 * Desctiption: change to DSI_CMD_MODE since it needed to
@@ -118,15 +117,12 @@ static int mipi_dsi_off(struct platform_device *pdev)
 
 	ret = panel_next_off(pdev);
 
-#ifdef CONFIG_MSM_BUS_SCALING
-	mdp_bus_scale_update_request(0);
-#endif
-
 #if defined(CONFIG_FB_MSM_MIPI_DSI_SONY)  
 	mipi_lane_ctrl_ULPS(1);
 #endif
 
 	spin_lock_bh(&dsi_clk_lock);
+
 	mipi_dsi_clk_disable();
 
 	/* disbale dsi engine */
@@ -322,7 +318,8 @@ static int mipi_dsi_on(struct platform_device *pdev)
 	else
 		down(&mfd->dma->mutex);
 
-	ret = panel_next_on(pdev);
+	if (mfd->op_enable)
+		ret = panel_next_on(pdev);
 
 	mipi_dsi_op_mode_config(mipi->mode);
 
@@ -371,15 +368,10 @@ static int mipi_dsi_on(struct platform_device *pdev)
 			}
 			mipi_dsi_set_tear_on(mfd);
 		}
+		mipi_dsi_clk_disable();
+		mipi_dsi_ahb_ctrl(0);
+		mipi_dsi_unprepare_clocks();
 	}
-
-#ifdef CONFIG_MSM_BUS_SCALING
-	mdp_bus_scale_update_request(2);
-	perf_current.mdp_bw = OVERLAY_PERF_LEVEL4;
-	perf_current.mdp_clk_rate = 0;
-#endif
-
-	mdp4_overlay_dsi_state_set(ST_DSI_RESUME);
 
 	if (mdp_rev >= MDP_REV_41)
 		mutex_unlock(&mfd->dma->ov_mutex);

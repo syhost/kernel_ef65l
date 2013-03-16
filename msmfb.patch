@@ -1,0 +1,102 @@
+From e401daf86555756dfe3df9f38f3df0d48dd891cd Mon Sep 17 00:00:00 2001
+From: Ken Zhang <kenz@codeaurora.org>
+Date: Tue, 8 Jan 2013 14:28:20 -0500
+Subject: [PATCH] msm: display: panel frame rate report
+
+Add metadata ioctl for retrieving panel frame rate.
+Get ready to remove reserved fields usage.
+
+Change-Id: I51a4aed9d85efd5f83a184100b6a3dc682c7a67c
+Signed-off-by: Ken Zhang <kenz@codeaurora.org>
+---
+ drivers/video/msm/msm_fb.c |   30 ++++++++++++++++++++++++++++++
+ include/linux/msm_mdp.h    |    4 +++-
+ 2 files changed, 33 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/video/msm/msm_fb.c b/drivers/video/msm/msm_fb.c
+index 4252296..13fac54 100755
+--- a/drivers/video/msm/msm_fb.c
++++ b/drivers/video/msm/msm_fb.c
+@@ -3748,6 +3748,24 @@ static int msmfb_display_commit(struct fb_info *info,
+ 	}
+ 	return ret;
+ }
++
++static int msmfb_get_metadata(struct msm_fb_data_type *mfd,
++				struct msmfb_metadata *metadata_ptr)
++{
++	int ret = 0;
++	switch (metadata_ptr->op) {
++	case metadata_op_frame_rate:
++		metadata_ptr->data.panel_frame_rate =
++			mdp_get_panel_framerate(mfd);
++		break;
++	default:
++		pr_warn("Unsupported request to MDP META IOCTL.\n");
++		ret = -EINVAL;
++		break;
++	}
++	return ret;
++}
++
+ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
+ 			unsigned long arg)
+ {
+@@ -3767,6 +3785,7 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
+ 	struct msmfb_mdp_pp mdp_pp;
+ 	struct msmfb_metadata mdp_metadata;
+ 	struct mdp_buf_sync buf_sync;
++	struct msmfb_metadata mdp_metadata;
+ 	int ret = 0;
+ 	mutex_lock(&mfd->entry_mutex);
+ 	msm_fb_pan_idle(mfd);
+@@ -4083,6 +4102,17 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
+ 		ret = msmfb_display_commit(info, argp);
+ 		break;
+ 
++	case MSMFB_METADATA_GET:
++		ret = copy_from_user(&mdp_metadata, argp, sizeof(mdp_metadata));
++		if (ret)
++			return ret;
++		ret = msmfb_get_metadata(mfd, &mdp_metadata);
++		if (!ret)
++			ret = copy_to_user(argp, &mdp_metadata,
++				sizeof(mdp_metadata));
++
++		break;
++
+ 	default:
+ 		MSM_FB_INFO("MDP: unknown ioctl (cmd=%x) received!\n", cmd);
+ 		ret = -EINVAL;
+diff --git a/include/linux/msm_mdp.h b/include/linux/msm_mdp.h
+index 8535f22..8404de0 100755
+--- a/include/linux/msm_mdp.h
++++ b/include/linux/msm_mdp.h
+@@ -1,7 +1,7 @@
+ /* include/linux/msm_mdp.h
+  *
+  * Copyright (C) 2007 Google Incorporated
+- * Copyright (c) 2012 Code Aurora Forum. All rights reserved.
++ * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
+  *
+  * This software is licensed under the terms of the GNU General Public
+  * License version 2, as published by the Free Software Foundation, and
+@@ -75,6 +75,7 @@
+ #define MSMFB_METADATA_SET  _IOW(MSMFB_IOCTL_MAGIC, 163, struct msmfb_metadata)
+ #define MSMFB_DISPLAY_COMMIT      _IOW(MSMFB_IOCTL_MAGIC, 164, \
+ 						struct mdp_display_commit)
++#define MSMFB_METADATA_GET  _IOW(MSMFB_IOCTL_MAGIC, 166, struct msmfb_metadata)
+ 
+ #define FB_TYPE_3D_PANEL 0x10101010
+ #define MDP_IMGTYPE2_START 0x10000
+@@ -501,6 +502,7 @@ struct msmfb_mdp_pp {
+ enum {
+ 	metadata_op_none,
+ 	metadata_op_base_blend,
++	metadata_op_frame_rate,
+ 	metadata_op_max
+ };
+ 
+-- 
+1.7.10
+
